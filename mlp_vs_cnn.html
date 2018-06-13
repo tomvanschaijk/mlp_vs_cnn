@@ -12243,7 +12243,7 @@ div#notebook {
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>This function is what builds the actual neural network architecture. It receives the data that we got from the preprocess function, as well as the number of categories (labels). Just following the code demonstrates the easy Keras API. We create a Sequential neural network in the first line. Then we add a Flatten layer. This is a fundamental difference between the MLP and a CNN: an MLP uses simple data vectors, arrays if you will, with the x-values of every input image provided. Because our image is a 32x32 matrix, we need to convert it to a flattened vector. That's what the Flatten layer does for us. It requires (like any first layer in the model would) the input shape. The shape of x_train is 45000x32x32x3 since we have 45000 images of 32x32 pixels with 3 values (RGB) each. That will then get flattened to one long array of numbers. After that we add a Dense (fully connected) layer with 1000 neurons (why 1000? I can only say hyperparameter optimization is an interesting topic, and this is just an example). The activation function (the function that will be performed on the result of multiplying all x-values with their weights, and then adding them up and adding the bias) is the relu function. I won't go too deep into it, but what it does for a certain x value is: if the value is lower than 0, return 0. Otherwise return x. So it gives the max of 0 and x.
-After that we get a Dropout layer with a parameter of 0.2. In short, a Dropout layer with, for example, 0.2 as an argument will result in a 20% chance that either neuron will be disregarded from the training in each epoch. This is a countermeasure against overfitting (which you should definitely look up). After those 2 layers, we get another fully connected layer, followed by another Dropout. At the end, the last Dense layer contains "categories" amount of neurons. We know that will be 10, since those are the number of categories. So each of those neurons will output the probability of the input image being that category. The "softmax" activation function is a multiclass categorization function. A simple search online will explain you what the formula is, and why (btw, e = 2.7182818 - and then some).</p>
+After that we get a Dropout layer with a parameter of 0.2. In short, a Dropout layer with, for example, 0.2 as an argument will result in a 20% chance that either neuron will be disregarded from the training in each epoch. This is a countermeasure against overfitting (which you should definitely look up). After those 2 layers, we get another fully connected layer, followed by another Dropout. At the end, the last Dense layer contains "categories" amount of neurons. We know that will be 10, since those are the number of categories. So each of those neurons will output the probability of the input image being that category. The "softmax" activation function is a multiclass categorization function. A simple search online will explain you what the formula is, and why (btw, e = 2.7182818 - and then some). We compile the model with the categorical_crossentropy loss function (this is the error function we will use to judge the quality of the model, basically the accuracy of the weights of our equations), and rmsprop as optimizer. RmsProp is only one of the optimizers avaible in Keras, there are multiple available such as Adam, Adagrad, ..., each of which have several hyperparameters such as <strong>learning rate</strong>, <strong>learning rate decay</strong>, ways to deal with local minima and so on.</p>
 
 </div>
 </div>
@@ -13008,6 +13008,70 @@ Epoch 00100: val_loss did not improve from 1.69003
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<p>Before jumping into the CNN implementation, we do have to hit the brake a bit, and take a look at what's not to like about the MLP implementation of this problem. As you might have guessed already, judging from the remarks I made in the MLP architecture paragraph, there were a whole lot of parameters to train: well over 3 million parameters. Now, that's for small images of 32x32 pixels. A natural result is that it took quite some time. Another very important disadvantage is this: we took those pixels, and we flattened them. Instead of using the nice 32x32x3 matrix of data. In short: we disregarded most of the spacial properties of images, and just threw the values in one long row. When thinking about images, that alone can hardly be ideal. Images are spacially ordered data, so we want to treat them as such. Those dimensional properties will for sure help us in classification, and enable us to achieve a higher degree of precision in our predictions. And exactly that is where CNN's come in to save the day. The bad news about that, is that we just have to dive into a tiny bit of theory for that. This is fun stuff however, so let's go for it. We already saw the use of Dense, Dropout, Activation, Flatten layers in vanilla feed forward networks. In CNN's we will add just 2 more: Convolutional (big surprise) and Pooling layers. To make it clear what those do, we'll shortly dive into how a CNN looks at image data to perform its magic.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Convolutional-layer">Convolutional layer<a class="anchor-link" href="#Convolutional-layer">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>First and foremost, I will keep this explanation rather short and simple. Although CNN's are not hard to understand, there's a lot that can be said about them, and I just want to communicate the basic premise of how they work, as that is the main message I want to get across.</p>
+<p>The main takeaway is that, when using CNN's, you keep in mind the fact that image pixels that are close to eachother are more heavily related that pixels far away from eachother. So what we do not want, is to remove that spacial correlation, and "unpack" or "flatten" those pixels to a long array. A better alternative is to keep that matrix alive and look at pixel groups in order to process the raw data points in that matrix. That is exactly what we want to do in Convolutional layers.</p>
+<p>Introduction the concept of a</p>
+<p>An added benefit here is the fact that our layers are not fully connected. Not every node in a layer is connected to every node in a next layer. This avoids an explosion in the amount of parameters, and thus, work.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Pooling-layer">Pooling layer<a class="anchor-link" href="#Pooling-layer">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Whereas Convolutional layers are responsible for <strong>deepening</strong> an image by introducing multiple filters, Pooling layers make sure the width and height of an image get reduced. This is done by way of the same concept of sliding a window of certain dimensions over the input matrix, and outputting a value, depending on the type of Pooling layer:</p>
+<ul>
+<li>MaxPooling layers take the average of the values that the kernel is currently sliding over, and takes the maximum value there. Quite simple, using an example, this looks like this, effectively cutting the width and height dimensions in half:</li>
+</ul>
+<p><img src="images/maxpooling.png" alt="maxpooling"></p>
+<ul>
+<li>Global pooling layers do not use a stride or kernel size, but quite simply take the average of the entire set of values in a single feature map, and outputs 1 value. This is a more extreme way of reducing the dimensions.</li>
+</ul>
+<p><img src="images/globalpooling.png" alt="globalpooling"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So, that's all the theoretical gibberish you'll get thrown at you. But I think you can agree it wasn't that bad, and quite interesting! But for those waiting for more code, now's the time to put all that stuff into practice. As a summary, to hammer the point home, the entire process would look something like the picture below. Again, realize that this explanation (even more so for CNN's as was the case for MLP's) is extremely brief and simple. Much more is to be said about all the intricacies here, but this short introduction does give you an idea of the basic concepts.</p>
+<p><img src="images/cnnexample.png" alt="cnn"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="CNN-implementation">CNN implementation<a class="anchor-link" href="#CNN-implementation">&#182;</a></h2>
 </div>
 </div>
@@ -13024,6 +13088,15 @@ Epoch 00100: val_loss did not improve from 1.69003
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>First, we will import the 2D Convolutional and MaxPooling layers that we need.</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -13054,6 +13127,15 @@ Epoch 00100: val_loss did not improve from 1.69003
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As expected, now we start implementing the architecture of our CNN. Note that we don't have to do any special or extra preprocessing of our data, we can just start with the same preprocessed data as we used with the MLP. For starters, we again define a Sequential model. Then we add our very first Convolutional layer. This consists of 16 filters, each of which uses a 2x2 window that we will slide over our image. The padding is set to "same", which means that we will add blank pixels at the side of our images in the case that the image width and height don't enable the convolutional window to nicely cover each original image pixel block. Our activation is again the familiar reactive linear unit, and as always we provide the training shape of 32x32x3. After each Convolutional layer, we install a MaxPooling layer with the same window size. As you see, this combination is applied several times. The effects of this, are that the width and height of our images get reduced (basically halved because of the window size of 2x2), but dimensions get added. Over the course of the entire network we slowly convert our 32x32x3 image to a long array of numbers. After 3 sets of Convolutional+Pooling layers, we add a Dropout layer. Since our array is at that point not yet a one dimensional vector, we do require a Flatten layer at this point. We connect this to a Dense layer with 500 neurons, followed by another Dropout layer and a final Dense output layer to calculate the probabilities for each of the categories using softmax. We compile the model with the categorical_crossentropy loss function, and using rmsprop as optimizer. Of course, we aim for accuracy.</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -13117,6 +13199,15 @@ _________________________________________________________________
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As we did for your MLP, we print out a summary of our CNN architecture and try to explain the numbers we are seeing. Each image enters the first Convolutional layer as a 32x32x3 matrix. Remember again, that is a vast distinction from the MLP, which need a Flattened array. So our output shape here is 32x32x16, since we use 16 filters. So our image is deepened. Concerning the amount of parameters, remember our window size was 2x2, and we convolve it over each of the 3 RGB layers. As mentioned we have 16 filters, and we shouldn't forget the biases as well. That gives us ((2x2x3)+1)x16=208 parameters. Not hardly as much as the first layer in the MLP. Then we get our MaxPooling layer, which takes that 32x32x16 matrix and takes the maximum of each 2x2 window, for each of the 16 filters, leaving us with a 16x16x16 matrix. Onto the second Convolutional layer then. This outputs a 16x16x32 matrix, since we have 32 filters. Using the same formula for our parameters, we calculate ((2x2x16)+1)x32=2080 parameters. Feeding the 16x16x32 matrix into the next MaxPooling layer results in a 8x8x32 matrix. Getting leaner and meaner (I know that's a bad joke, I don't care). The last Convolutional window then again takes that 8x8x32 matrix and leaves the image as a 8x8x64 matrix, using ((2x2x32)+1)x64=8256 weights that we can optimize. The final MaxPooling layer thins out that image matrix even more, into a 4x4x64 matrix. We then flatten that matrix, resulting in a 1024 length array. That's no big drama by now: we squeezed out all interesting dimensional data and used it to optimize the weights. Now it's time to flatten it out and throw a Dense layer at it. We use 500 nodes here, and 1025x500=512500 weights ready to be optimized. Again with the weights explosion, but no fear, we're nearly at the end. After another Dropout layer to counteract overfitting, we go to the last Dense layer, which is the output layer to calculate probability for the 10 categories, which requires 5010 parameters. In total we hit around half a million parameters, which is substantially less than in the case of the MLP. Will it pay off though?</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -13246,6 +13337,15 @@ Epoch 00020: val_loss did not improve from 0.95311
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>By now, this hardly needs explanation. We define our checkpoint again, and start pushing our dataset through our CNN. Note we only use 20 epochs this time, which substantially cuts down training time as well.</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[31]:</div>
@@ -13343,6 +13443,16 @@ Accuracy cnn: 67.18%
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And now, what you probably where curious about this whole time: comparing the scores for both the MLP as the CNN. I think the difference is pretty clear. Although the MLP didn't perform that bad (way above "random guessing", which proves we are at least doing something right here), the CNN shatters those numbers, with less training time and way less parameters. The reasons should be rather clear by this time. The sheer conservation of dimensional data, and the possibility to keep that into account during much of the training process obviously is crucial in recognizing the images. 67% is not bad at all. Can we achieve more? Obviously we can, but remember we just trained this model from scratch, in a few minutes. Our architecture is rather simple, and our hyperparameters are not really optimized or researched. We didn't even use techniques such as image augmentation or transfer learning, which would push our results to even higher levels, especially for real-life applications and more messy datasets.</p>
+<p>This is a very nice proof of concept though, and I hope this sparked your interest to go and research more about deep learning, MLP's, CNN's and much more. Although it can be easily overlooked, remember what we did here. For 10000 images, using the simple 32x32x3 matrix of values between 0 and 255 in that image, we managed to determine, with an accuracy of 67%, what that image represents. That in itself is pretty awesome. However, there's so much more out there (RNN's, GAN's, auto-encoders, ...) to apply on an enormous amount of areas of industry, and research is still very much ongoing in most sof these fields. Time to get involved!</p>
+
+</div>
+</div>
 </div>
     </div>
   </div>
